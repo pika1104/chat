@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Simple Chat</title>
+<title>Shared Chat</title>
 <style>
 body{font-family:sans-serif;margin:0;display:flex;flex-direction:column;height:100vh;}
 #chat{flex:1;overflow:auto;padding:10px;background:#f2f2f2;}
@@ -22,18 +22,15 @@ button{padding:8px;}
 </div>
 
 <script>
-let messages = [];
+const repoURL = "https://raw.githubusercontent.com/はるき/chat/main/messages.json";
 
-function send(){
-  const text = document.getElementById("text").value;
-  if(!text) return;
-
-  messages.push(text);
-  render();
-  document.getElementById("text").value="";
+async function loadMessages(){
+  const res = await fetch(repoURL + "?t=" + Date.now());
+  const data = await res.json();
+  render(data);
 }
 
-function render(){
+function render(messages){
   const chat = document.getElementById("chat");
   chat.innerHTML="";
   messages.forEach(m=>{
@@ -43,6 +40,13 @@ function render(){
     chat.appendChild(div);
   });
 }
+
+async function send(){
+  alert("この方式では書き込みはできません（読み取り専用）");
+}
+
+setInterval(loadMessages, 2000);
+loadMessages();
 </script>
 
 </body>
