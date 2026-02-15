@@ -114,7 +114,17 @@ function renderGroups(){
   Object.keys(groups).forEach(name=>{
     const div=document.createElement("div");
     div.className="group";
-    div.innerText=name;
+
+    const messages = groups[name];
+    const last = messages.length > 0 ? messages[messages.length-1].text : "";
+    const unread = messages.filter(m=>!m.read && m.user!==currentUser).length;
+
+    div.innerHTML = `
+      <strong>${name}</strong><br>
+      <small>${last}</small>
+      ${unread>0 ? `<span style="color:red"> ●${unread}</span>` : ""}
+    `;
+
     div.onclick=()=>openGroup(name);
     g.appendChild(div);
   });
@@ -130,34 +140,59 @@ function createGroup(){
 
 function openGroup(name){
   currentGroup=name;
+
+  // 開いたら既読にする
+  groups[name].forEach(m=>{
+    if(m.user!==currentUser){
+      m.read=true;
+    }
+  });
+
+  save();
   renderChat();
+  renderGroups();
 }
 
 function renderChat(){
   const chat=document.getElementById("chat");
   chat.innerHTML="";
   if(!currentGroup) return;
+
   groups[currentGroup].forEach(m=>{
     const div=document.createElement("div");
     div.className="message "+(m.user===currentUser?"me":"other");
-    div.innerText=m.user+": "+m.text;
+    div.innerHTML = `
+      ${m.user}: ${m.text}
+      ${m.user===currentUser ? `<br><small>${m.read?"既読":"未読"}</small>`:""}
+    `;
     chat.appendChild(div);
   });
+
+  chat.scrollTop = chat.scrollHeight;
 }
 
 function send(){
   if(!currentGroup) return;
   const text=document.getElementById("text").value;
   if(!text) return;
+
   groups[currentGroup].push({
     user:currentUser,
     text:text,
     read:false
   });
+
   save();
   renderChat();
+  renderGroups();
   document.getElementById("text").value="";
 }
+
+document.getElementById("text").addEventListener("keydown", e=>{
+  if(e.key==="Enter"){
+    send();
+  }
+});
 
 function toggleDark(){
   document.body.classList.toggle("dark");
@@ -165,6 +200,7 @@ function toggleDark(){
 
 renderGroups();
 </script>
+
 
 </body>
 </html>
