@@ -2,51 +2,168 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Shared Chat</title>
+<title>MyChat Service</title>
 <style>
-body{font-family:sans-serif;margin:0;display:flex;flex-direction:column;height:100vh;}
-#chat{flex:1;overflow:auto;padding:10px;background:#f2f2f2;}
-.msg{background:white;margin:5px 0;padding:8px;border-radius:10px;}
-#inputArea{display:flex;padding:10px;background:#ddd;}
-input{flex:1;padding:8px;}
-button{padding:8px;}
+body{
+  margin:0;
+  font-family:sans-serif;
+  display:flex;
+  height:100vh;
+  background:#f0f2f5;
+}
+#sidebar{
+  width:250px;
+  background:#111;
+  color:white;
+  display:flex;
+  flex-direction:column;
+}
+#sidebar h2{
+  text-align:center;
+}
+#groups{
+  flex:1;
+  overflow:auto;
+}
+.group{
+  padding:10px;
+  cursor:pointer;
+}
+.group:hover{
+  background:#333;
+}
+#main{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+}
+#chat{
+  flex:1;
+  overflow:auto;
+  padding:15px;
+}
+.message{
+  margin:5px 0;
+  padding:8px 12px;
+  border-radius:10px;
+  max-width:60%;
+}
+.me{
+  background:#06c755;
+  color:white;
+  align-self:flex-end;
+}
+.other{
+  background:#ddd;
+}
+#inputArea{
+  display:flex;
+  padding:10px;
+  background:#ccc;
+}
+input{
+  flex:1;
+  padding:8px;
+}
+button{
+  padding:8px;
+}
+.dark{
+  background:#1e1e1e;
+  color:white;
+}
 </style>
 </head>
 <body>
 
-<div id="chat"></div>
+<div id="sidebar">
+  <h2>MyChat</h2>
+  <div id="userInfo"></div>
+  <div id="groups"></div>
+  <button onclick="createGroup()">＋グループ</button>
+  <button onclick="toggleDark()">🌙</button>
+</div>
 
-<div id="inputArea">
-<input id="text" placeholder="メッセージ">
-<button onclick="send()">送信</button>
+<div id="main">
+  <div id="chat"></div>
+  <div id="inputArea">
+    <input id="text" placeholder="メッセージ">
+    <button onclick="send()">送信</button>
+  </div>
 </div>
 
 <script>
-const repoURL = "https://raw.githubusercontent.com/はるき/chat/main/messages.json";
+let currentUser = localStorage.getItem("user");
+let groups = JSON.parse(localStorage.getItem("groups")) || {};
+let currentGroup = null;
 
-async function loadMessages(){
-  const res = await fetch(repoURL + "?t=" + Date.now());
-  const data = await res.json();
-  render(data);
+if(!currentUser){
+  currentUser = prompt("ユーザー名を入力");
+  localStorage.setItem("user", currentUser);
 }
 
-function render(messages){
-  const chat = document.getElementById("chat");
-  chat.innerHTML="";
-  messages.forEach(m=>{
+document.getElementById("userInfo").innerText = "👤 " + currentUser;
+
+function save(){
+  localStorage.setItem("groups", JSON.stringify(groups));
+}
+
+function renderGroups(){
+  const g = document.getElementById("groups");
+  g.innerHTML="";
+  Object.keys(groups).forEach(name=>{
     const div=document.createElement("div");
-    div.className="msg";
-    div.textContent=m;
+    div.className="group";
+    div.innerText=name;
+    div.onclick=()=>openGroup(name);
+    g.appendChild(div);
+  });
+}
+
+function createGroup(){
+  const name = prompt("グループ名");
+  if(!name) return;
+  groups[name]=[];
+  save();
+  renderGroups();
+}
+
+function openGroup(name){
+  currentGroup=name;
+  renderChat();
+}
+
+function renderChat(){
+  const chat=document.getElementById("chat");
+  chat.innerHTML="";
+  if(!currentGroup) return;
+  groups[currentGroup].forEach(m=>{
+    const div=document.createElement("div");
+    div.className="message "+(m.user===currentUser?"me":"other");
+    div.innerText=m.user+": "+m.text;
     chat.appendChild(div);
   });
 }
 
-async function send(){
-  alert("この方式では書き込みはできません（読み取り専用）");
+function send(){
+  if(!currentGroup) return;
+  const text=document.getElementById("text").value;
+  if(!text) return;
+  groups[currentGroup].push({
+    user:currentUser,
+    text:text,
+    read:false
+  });
+  save();
+  renderChat();
+  document.getElementById("text").value="";
 }
 
-setInterval(loadMessages, 2000);
-loadMessages();
+function toggleDark(){
+  document.body.classList.toggle("dark");
+}
+
+renderGroups();
 </script>
 
 </body>
